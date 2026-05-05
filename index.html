@@ -231,9 +231,9 @@
 
       // Agent API 配置 (V2 同步接口)
       const COZE_CONFIG = {
-        botId: '7633041099640569898',
-        apiKey: 'pat_O3n7XLN2l3gXPqEfJzLoLn2nTrtvLqoiyJs2jAm8CF4fjFXHAyyRLeJ4VnFBiEz9',
-        apiUrl: '/coze-api/open_api/v2/chat'
+        botId: import.meta.env.VITE_COZE_BOT_ID || '7633041099640569898',
+        apiKey: import.meta.env.VITE_COZE_API_KEY || 'pat_O3n7XLN2l3gXPqEfJzLoLn2nTrtvLqoiyJs2jAm8CF4fjFXHAyyRLeJ4VnFBiEz9',
+        apiUrl: 'https://api.coze.cn/open_api/v2/chat'
       };
 
       // 格式化消息内容：处理插件代码 + Markdown
