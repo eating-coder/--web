@@ -9,8 +9,11 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/duotone/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1"></script>
+  
+  <!-- 核心修复点：将版本号改为 2.0.3 并增加 crossorigin，强制穿透错误的 CDN 缓存 -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/duotone/style.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3" crossorigin="anonymous"></script>
+  
   <script>
     tailwind.config = {
       theme: {
@@ -136,7 +139,8 @@
     const ChatsCircleIcon = ({ className = '' }) => PhosphorIcon({ name: 'chats-circle', className });
     const ChartPieSliceIcon = ({ className = '' }) => PhosphorIcon({ name: 'chart-pie-slice', className });
     const NotepadIcon = ({ className = '' }) => PhosphorIcon({ name: 'notepad', className });
-    const CalendarDotsIcon = ({ className = '' }) => PhosphorIcon({ name: 'calendar-dots', className });
+    // 替换为低版本兼容性更好的 calendar-check
+    const CalendarCheckIcon = ({ className = '' }) => PhosphorIcon({ name: 'calendar-check', className });
     const FolderOpenIcon = ({ className = '' }) => PhosphorIcon({ name: 'folder-open', className });
     const BookOpenTextIcon = ({ className = '' }) => PhosphorIcon({ name: 'book-open-text', className });
     const GearSixIcon = ({ className = '' }) => PhosphorIcon({ name: 'gear-six', className });
@@ -179,7 +183,7 @@
         { key: 'chat', icon: ChatsCircleIcon, label: '对话助手' },
         { key: 'dashboard', icon: ChartPieSliceIcon, label: '数据看板' },
         { key: 'planning', icon: NotepadIcon, label: '内容规划' },
-        { key: 'calendar', icon: CalendarDotsIcon, label: '发布日历' },
+        { key: 'calendar', icon: CalendarCheckIcon, label: '发布日历' },
         { key: 'plans', icon: FolderOpenIcon, label: '方案库' },
         { key: 'settings', icon: GearSixIcon, label: '设置' }
       ];
@@ -188,7 +192,7 @@
         <aside className="w-60 bg-white flex flex-col shadow-soft fixed left-0 top-0 h-screen z-50">
           <div className="px-6 py-6 flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent-purple rounded-xl flex items-center justify-center text-white font-bold text-lg">Z</div>
-            <span className="text-xl font-bold text-text-primary">涨粉社</span>
+            <span className="text-xl font-bold text-text-primary tracking-widest">涨粉社</span>
           </div>
           <nav className="flex-1 py-4 px-3">
             {menuItems.map(item => {
