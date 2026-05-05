@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>涨粉社 - KOC智能运营助手</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366F1',
+            'primary-light': '#EEF2FF',
+            'primary-dark': '#4F46E5',
+            'primary-gradient': '#8B5CF6',
+            bg: '#F5F7FA',
+            'bg-dark': '#E8ECF0',
+            card: '#FFFFFF',
+            'text-primary': '#1E293B',
+            'text-secondary': '#64748B',
+            'text-muted': '#94A3B8',
+            accent: {
+              pink: '#EC4899',
+              yellow: '#F59E0B',
+              green: '#10B981',
+              cyan: '#06B6D4',
+              purple: '#8B5CF6'
+            }
+          },
+          boxShadow: {
+            'soft': '0 4px 20px rgba(0, 0, 0, 0.08)',
+            'card': '0 2px 12px rgba(0, 0, 0, 0.06)',
+            'hover': '0 8px 30px rgba(99, 102, 241, 0.15)',
+            'button': '0 4px 14px rgba(99, 102, 241, 0.3)'
+          },
+          borderRadius: {
+            'xl': '16px',
+            '2xl': '20px',
+            '3xl': '24px'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+    .scrollbar::-webkit-scrollbar { width: 6px; }
+    .scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+    .scrollbar::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const mockData = {
+      accountStats: { followers: 12560, engagementRate: 4.8, postsThisMonth: 12, profileViews: 8920, followersChange: 320, engagementChange: 0.5, profileViewsChange: 156 },
+      recentPosts: [
+        { id: 1, title: '如何快速涨粉', likes: 235, comments: 42, shares: 18, date: '04-28' },
+        { id: 2, title: '短视频创作技巧', likes: 567, comments: 89, shares: 67, date: '04-27' },
+        { id: 3, title: '直播带货经验分享', likes: 1234, comments: 234, shares: 156, date: '04-26' },
+        { id: 4, title: '私域流量运营方法', likes: 456, comments: 78, shares: 34, date: '04-25' }
+      ],
+      weeklyData: [
+        { date: '周一', followers: 11800, views: 3200 },
+        { date: '周二', followers: 11950, views: 4500 },
+        { date: '周三', followers: 12100, views: 3800 },
+        { date: '周四', followers: 12250, views: 5200 },
+        { date: '周五', followers: 12400, views: 4100 },
+        { date: '周六', followers: 12480, views: 6800 },
+        { date: '周日', followers: 12560, views: 5900 }
+      ],
+      engagementData: [
+        { date: '周一', likes: 234, comments: 45 },
+        { date: '周二', likes: 456, comments: 78 },
+        { date: '周三', likes: 321, comments: 56 },
+        { date: '周四', likes: 567, comments: 89 },
+        { date: '周五', likes: 432, comments: 67 },
+        { date: '周六', likes: 876, comments: 134 },
+        { date: '周日', likes: 654, comments: 98 }
+      ],
+      topics: [
+        { id: 1, title: '如何提升账号曝光率', tags: ['运营技巧', '涨粉'], status: '待优化' },
+        { id: 2, title: '短视频内容创作技巧', tags: ['短视频', '创作'], status: '进行中' },
+        { id: 3, title: '粉丝互动运营策略', tags: ['互动', '粉丝'], status: '已完成' },
+        { id: 4, title: '爆款文案写作方法', tags: ['文案', '爆款'], status: '待优化' },
+        { id: 5, title: '直播带货实战经验', tags: ['直播', '带货'], status: '进行中' },
+        { id: 6, title: '私域流量转化技巧', tags: ['私域', '转化'], status: '待优化' }
+      ],
+      materials: [
+        { id: 1, title: '产品测评模板', category: '模板', usage: 23 },
+        { id: 2, title: '干货分享大纲', category: '模板', usage: 18 },
+        { id: 3, title: '热门话题汇总', category: '素材', usage: 45 },
+        { id: 4, title: '封面图设计指南', category: '教程', usage: 31 },
+        { id: 5, title: '文案金句库', category: '素材', usage: 56 },
+        { id: 6, title: '视频剪辑技巧', category: '教程', usage: 29 }
+      ],
+      plans: [
+        { id: 1, title: 'Q2内容规划方案', type: 'topic', date: '2024-04-20' },
+        { id: 2, title: '账号诊断报告', type: 'report', date: '2024-04-18' },
+        { id: 3, title: '内容优化建议', type: 'suggestion', date: '2024-04-15' },
+        { id: 4, title: '爆款文案模板', type: 'template', date: '2024-04-12' },
+        { id: 5, title: '粉丝增长方案', type: 'topic', date: '2024-04-10' },
+        { id: 6, title: '学习对象分析报告', type: 'report', date: '2024-04-08' }
+      ],
+      knowledge: [
+        { id: 1, category: 'platform', title: '小红书社区规范详解', summary: '了解小红书平台的内容审核标准和社区规范' },
+        { id: 2, category: 'platform', title: '抖音算法推荐机制', summary: '深入理解抖音的内容推荐算法原理' },
+        { id: 3, category: 'benchmark', title: '美妆领域KOL数据基准', summary: '美妆类账号的粉丝增长和互动数据参考' },
+        { id: 4, category: 'benchmark', title: '美食博主运营指标', summary: '美食类内容的关键运营指标分析' },
+        { id: 5, category: 'case', title: '爆款笔记拆解案例', summary: '分析10万+点赞笔记的共性特征' },
+        { id: 6, category: 'case', title: '直播带货成功案例', summary: '头部主播的直播运营策略分析' },
+        { id: 7, category: 'methodology', title: '内容矩阵搭建方法', summary: '多平台内容分发策略与实践' },
+        { id: 8, category: 'methodology', title: '粉丝运营全攻略', summary: '从0到1的粉丝运营体系建设' }
+      ],
+      hotKeywords: ['AI创作', '短视频运营', '直播带货', '私域流量', '内容变现', '个人IP', '小红书运营', '抖音运营', '粉丝增长', '爆款文案']
+    };
+
+    // Phosphor Duotone 图标组件
+    const PhosphorIcon = ({ name, className = '' }) => {
+      return React.createElement('i', { className: `ph-duotone ph-${name} leading-none align-middle ${className}` });
+    };
+    
+    const ChatsCircleIcon = ({ className = '' }) => PhosphorIcon({ name: 'chats-circle', className });
+    const ChartPieSliceIcon = ({ className = '' }) => PhosphorIcon({ name: 'chart-pie-slice', className });
+    const NotepadIcon = ({ className = '' }) => PhosphorIcon({ name: 'notepad', className });
+    const CalendarDotsIcon = ({ className = '' }) => PhosphorIcon({ name: 'calendar-dots', className });
+    const FolderOpenIcon = ({ className = '' }) => PhosphorIcon({ name: 'folder-open', className });
+    const BookOpenTextIcon = ({ className = '' }) => PhosphorIcon({ name: 'book-open-text', className });
+    const GearSixIcon = ({ className = '' }) => PhosphorIcon({ name: 'gear-six', className });
+    const UsersIcon = ({ className = '' }) => PhosphorIcon({ name: 'users', className });
+    const ChartLineUpIcon = ({ className = '' }) => PhosphorIcon({ name: 'chart-line-up', className });
+    const PencilSimpleLineIcon = ({ className = '' }) => PhosphorIcon({ name: 'pencil-simple-line', className });
+    const Edit3Icon = ({ className = '' }) => PhosphorIcon({ name: 'pencil-simple', className });
+    const EyeIcon = ({ className = '' }) => PhosphorIcon({ name: 'eye', className });
+    const RobotIcon = ({ className = '' }) => PhosphorIcon({ name: 'robot', className });
+    const TargetIcon = ({ className = '' }) => PhosphorIcon({ name: 'target', className });
+    const PenNibIcon = ({ className = '' }) => PhosphorIcon({ name: 'pen-nib', className });
+    const ChartBarIcon = ({ className = '' }) => PhosphorIcon({ name: 'chart-bar', className });
+    const MagnifyingGlassIcon = ({ className = '' }) => PhosphorIcon({ name: 'magnifying-glass', className });
+    const SparkleIcon = ({ className = '' }) => PhosphorIcon({ name: 'sparkle', className });
+    const UploadSimpleIcon = ({ className = '' }) => PhosphorIcon({ name: 'upload-simple', className });
+    const ImageIcon = ({ className = '' }) => PhosphorIcon({ name: 'image', className });
+    const PlusCircleIcon = ({ className = '' }) => PhosphorIcon({ name: 'plus-circle', className });
+    const ScrollIcon = ({ className = '' }) => PhosphorIcon({ name: 'scroll', className });
+    const BooksIcon = ({ className = '' }) => PhosphorIcon({ name: 'books', className });
+    const UserCircleIcon = ({ className = '' }) => PhosphorIcon({ name: 'user-circle', className });
+    const BellIcon = ({ className = '' }) => PhosphorIcon({ name: 'bell', className });
+    const FilePdfIcon = ({ className = '' }) => PhosphorIcon({ name: 'file-pdf', className });
+    const FileImageIcon = ({ className = '' }) => PhosphorIcon({ name: 'file-image', className });
+    const SunIcon = ({ className = '' }) => PhosphorIcon({ name: 'sun', className });
+    const MoonIcon = ({ className = '' }) => PhosphorIcon({ name: 'moon', className });
+    const XIcon = ({ className = '' }) => PhosphorIcon({ name: 'x', className });
+    const ClockCountdownIcon = ({ className = '' }) => PhosphorIcon({ name: 'clock-countdown', className });
+    const ClipboardTextIcon = ({ className = '' }) => PhosphorIcon({ name: 'clipboard-text', className });
+    const MessageSquareIcon = ({ className = '' }) => PhosphorIcon({ name: 'message-square', className });
+    const UserIcon = ({ className = '' }) => PhosphorIcon({ name: 'user', className });
+    const HeartIcon = ({ className = '' }) => PhosphorIcon({ name: 'heart', className });
+    const Share2Icon = ({ className = '' }) => PhosphorIcon({ name: 'share-2', className });
+    const LightbulbIcon = ({ className = '' }) => PhosphorIcon({ name: 'lightbulb', className });
+    const SettingsIcon = ({ className = '' }) => PhosphorIcon({ name: 'settings', className });
+    const ArrowsClockwiseIcon = ({ className = '' }) => PhosphorIcon({ name: 'arrows-clockwise', className });
+
+    // 侧边栏组件
+    const Sidebar = ({ currentPage, onNavigate }) => {
+      const menuItems = [
+        { key: 'chat', icon: ChatsCircleIcon, label: '对话助手' },
+        { key: 'dashboard', icon: ChartPieSliceIcon, label: '数据看板' },
+        { key: 'planning', icon: NotepadIcon, label: '内容规划' },
+        { key: 'calendar', icon: CalendarDotsIcon, label: '发布日历' },
+        { key: 'plans', icon: FolderOpenIcon, label: '方案库' },
+        { key: 'knowledge', icon: BookOpenTextIcon, label: '知识库' },
+        { key: 'settings', icon: GearSixIcon, label: '设置' }
+      ];
+
+      return (
+        <aside className="w-60 bg-white flex flex-col shadow-soft fixed left-0 top-0 h-screen z-50">
+          <div className="px-6 py-6 flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent-purple rounded-xl flex items-center justify-center text-white font-bold text-lg">Z</div>
+            <span className="text-xl font-bold text-text-primary">涨粉社</span>
+          </div>
+          <nav className="flex-1 py-4 px-3">
+            {menuItems.map(item => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => onNavigate(item.key)}
+                  className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-all duration-300 rounded-xl ${currentPage === item.key ? 'bg-gradient-to-r from-primary to-accent-purple text-white shadow-button' : 'hover:bg-gray-50 text-gray-700'}`}
+                >
+                  <IconComponent className="text-base" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                  {currentPage === item.key && <div className="ml-auto w-1.5 h-1.5 bg-white/80 rounded-full"></div>}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="px-3 pb-4">
+            <div className="p-4 bg-gradient-to-br from-primary-light/50 to-accent-purple/10 rounded-xl">
+              <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                <LightbulbIcon className="text-base text-accent-yellow" /> 今日提示
+              </p>
+              <p className="text-xs text-gray-500">发布高峰时段：18:00-20:00</p>
+            </div>
+          </div>
+        </aside>
+      );
+    };
+
+    // 对话助手页面
+    const ChatPage = () => {
+      const [messages, setMessages] = useState([{ id: '1', type: 'ai', content: '嗨，今天创作上遇到什么难题了？选题、文案还是数据，我们一起看看？', timestamp: '刚刚' }]);
+      const [inputMessage, setInputMessage] = useState('');
+      const [outputContent, setOutputContent] = useState(null);
+      const [panelCollapsed, setPanelCollapsed] = useState(false);
+      const [isLoading, setIsLoading] = useState(false);
+      const messagesEndRef = useRef(null);
+
+      useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+      // Agent API 配置 (V2 同步接口)
+      const COZE_CONFIG = {
+        botId: '7633041099640569898',
+        apiKey: 'pat_O3n7XLN2l3gXPqEfJzLoLn2nTrtvLqoiyJs2jAm8CF4fjFXHAyyRLeJ4VnFBiEz9',
+        apiUrl: '/coze-api/open_api/v2/chat'
+      };
+
+      // 格式化消息内容：处理插件代码 + Markdown
+      const formatMessage = (text) => {
+        if (!text) return '';
+        
+        // 处理 TODO 插件代码
+        text = text.replace(/\[TODO\]([\s\S]*?)\[\/TODO\]/g, (match, jsonStr) => {
+          return '<div class="my-3 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-sm font-medium">📋 系统已自动为您创建待办事项</div>';
+        });
+        
+        // 处理 SCHEDULE 插件代码
+        text = text.replace(/\[SCHEDULE\]([\s\S]*?)\[\/SCHEDULE\]/g, (match, jsonStr) => {
+          return '<div class="my-3 p-3 bg-green-50 border border-green-100 rounded-xl flex items-center gap-2 text-green-700 text-sm font-medium">📅 系统已自动为您创建日程安排</div>';
+        });
+        
+        // 使用 marked.parse 将 Markdown 转换为 HTML
+        return marked.parse(text);
+      };
+
+      // 统一的 Coze API 调用函数
+      const callCozeApi = async (message) => {
+        console.log('callCozeApi 被调用，消息:', message);
+        setIsLoading(true);
+        try {
+          const response = await fetch(COZE_CONFIG.apiUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${COZE_CONFIG.apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              bot_id: COZE_CONFIG.botId,
+              user: 'test_user',
+              query: message,
+              stream: false
+            })
+          });
+
+          console.log('API响应状态:', response.status);
+          const result = await response.json();
+          console.log('API响应数据:', result);
+
+          // 检查 HTTP 状态码
+          if (!response.ok) {
+            const errorMsg = `HTTP错误 ${response.status}: ${result.msg || response.statusText}`;
+            console.error('HTTP错误:', errorMsg);
+            setMessages(prev => [...prev, {
+              id: (Date.now() + 1).toString(),
+              type: 'ai',
+              content: `❌ 请求失败：${errorMsg}`,
+              timestamp: '刚刚'
+            }]);
+            return;
+          }
+
+          // 检查业务错误码 (Coze V2)
+          if (result.code && result.code !== 0) {
+            const errorMsg = result.msg || `业务错误码: ${result.code}`;
+            console.error('业务错误:', errorMsg);
+            setMessages(prev => [...prev, {
+              id: (Date.now() + 1).toString(),
+              type: 'ai',
+              content: `❌ 接口返回错误：${errorMsg}`,
+              timestamp: '刚刚'
+            }]);
+            return;
+          }
+
+          // 成功：从 messages 数组中提取 AI 回复 (Coze V2 格式)
+          if (result.messages && Array.isArray(result.messages)) {
+            // 寻找 role === 'assistant' 且 type === 'answer' 的消息
+            const aiMessage = result.messages.find(msg => 
+              msg.role === 'assistant' && msg.type === 'answer'
+            );
+            
+            if (aiMessage && aiMessage.content) {
+              console.log('找到AI回复:', aiMessage.content);
+              setMessages(prev => [...prev, {
+                id: (Date.now() + 1).toString(),
+                type: 'ai',
+                content: aiMessage.content,
+                timestamp: '刚刚'
+              }]);
+            } else {
+              // 没找到符合条件的消息
+              console.warn('未找到 assistant/answer 消息:', result.messages);
+              // 尝试提取其他 assistant 消息
+              const fallbackMessage = result.messages.find(msg => msg.role === 'assistant');
+              if (fallbackMessage && fallbackMessage.content) {
+                setMessages(prev => [...prev, {
+                  id: (Date.now() + 1).toString(),
+                  type: 'ai',
+                  content: fallbackMessage.content,
+                  timestamp: '刚刚'
+                }]);
+              } else {
+                setMessages(prev => [...prev, {
+                  id: (Date.now() + 1).toString(),
+                  type: 'ai',
+                  content: `⚠️ 未找到AI回复内容，请检查接口返回格式。`,
+                  timestamp: '刚刚'
+                }]);
+              }
+            }
+          } else {
+            // 返回数据格式不符合预期
+            console.warn('返回数据缺少 messages 数组:', result);
+            setMessages(prev => [...prev, {
+              id: (Date.now() + 1).toString(),
+              type: 'ai',
+              content: `⚠️ 接口返回了意外的数据格式：${JSON.stringify(result).substring(0, 150)}...`,
+              timestamp: '刚刚'
+            }]);
+          }
+
+        } catch (error) {
+          // 网络错误或 JSON 解析错误
+          console.error('API调用异常:', error);
+          const errorMessage = error.message || '网络连接失败，请检查网络后重试';
+          alert('网络请求失败：' + errorMessage);
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: `❌ 网络错误：${errorMessage}。请稍后重试或检查网络连接。`,
+            timestamp: '刚刚'
+          }]);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      // 发送用户消息
+      const sendMessage = async () => {
+        console.log('按钮被点击了，准备发送消息:', inputMessage);
+        if (!inputMessage.trim()) {
+          console.log('输入为空，直接返回');
+          return;
+        }
+
+        const messageToSend = inputMessage;
+        const userMsg = { id: Date.now().toString(), type: 'user', content: messageToSend, timestamp: '刚刚' };
+        console.log('添加用户消息:', userMsg);
+        setMessages(prev => [...prev, userMsg]);
+        setInputMessage('');
+
+        // 调用统一 API 函数
+        await callCozeApi(messageToSend);
+      };
+
+      // 快捷操作处理
+      const handleQuickAction = async (action) => {
+        const actionMap = {
+          diagnose: '帮我诊断账号定位问题',
+          topic: '根据我的定位推荐爆款选题',
+          generate: '帮我生成完整的小红书笔记',
+          optimize: '帮我优化笔记并进行风险检测',
+          review: '帮我分析数据并给出反馈建议'
+        };
+
+        const prompt = actionMap[action];
+        if (!prompt) return;
+
+        console.log('快捷操作:', action, prompt);
+        const userMsg = { id: Date.now().toString(), type: 'user', content: prompt, timestamp: '刚刚' };
+        setMessages(prev => [...prev, userMsg]);
+
+        // 调用统一 API 函数
+        await callCozeApi(prompt);
+      };
+
+      return (
+        <div className="flex h-screen">
+          <div className="flex-1 flex flex-col bg-white">
+            <div className="flex-1 overflow-y-auto px-6 py-8 space-y-5 scrollbar">
+              {messages.map(msg => {
+                if (msg.type === 'system') {
+                  return (
+                    <div key={msg.id} className="flex justify-center my-4">
+                      <div className="px-4 py-2 bg-gray-100 rounded-full">
+                        <p className="text-xs text-gray-500">{msg.content}</p>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={msg.id} className={`flex gap-4 ${msg.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${msg.type === 'user' ? 'bg-gradient-to-br from-primary to-accent-purple text-white' : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600'}`}>
+                      {msg.type === 'user' ? <UserIcon className="text-base" /> : <RobotIcon className="text-base" />}
+                    </div>
+                    <div className={`max-w-[70%] px-5 py-4 ${msg.type === 'user' ? 'bg-gradient-to-r from-primary to-accent-purple text-white rounded-2xl rounded-tr-md shadow-button' : 'bg-gray-50 text-text-primary rounded-2xl rounded-tl-md'}`}>
+                      {msg.type === 'user' ? (
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                      ) : (
+                        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
+                      )}
+                      <span className={`text-xs mt-2 block ${msg.type === 'user' ? 'text-white/70' : 'text-gray-400'}`}>{msg.timestamp}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {isLoading && (
+                <div className="flex gap-4">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600">
+                    <RobotIcon className="text-base" />
+                  </div>
+                  <div className="max-w-[70%] px-5 py-4 bg-gray-50 text-text-primary rounded-2xl rounded-tl-md">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="inline-block w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="inline-block w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-1">AI正在输入...</p>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="flex gap-3 p-4 border-t border-gray-100 bg-gray-50/50 flex-wrap">
+              {[{ icon: UsersIcon, label: '账号诊断', action: 'diagnose', desc: '帮用户诊断账号定位问题' }, { icon: TargetIcon, label: '选题推荐', action: 'topic', desc: '根据用户定位推荐爆款选题' }, { icon: PenNibIcon, label: '内容生成', action: 'generate', desc: '帮用户生成完整的小红书笔记' }, { icon: SparkleIcon, label: '发布前优化', action: 'optimize', desc: '笔记发布前进行优化与风险检测' }, { icon: ChartBarIcon, label: '数据复盘', action: 'review', desc: '根据用户提供的数据给出反馈与建议' }].map((btn, i) => {
+                const IconComp = btn.icon;
+                return (
+                  <div key={i} className="relative group">
+                    <button onClick={() => !isLoading && handleQuickAction(btn.action)} disabled={isLoading} className={`px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm flex items-center gap-2 hover:border-primary hover:bg-primary-light/30 transition-all duration-300 shadow-card ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      <IconComp className="text-sm" /><span className="font-medium">{btn.label}</span>
+                    </button>
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                      {btn.desc}
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full border-4 border-transparent border-t-gray-800"></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-3 p-4 border-t border-gray-100">
+              <input 
+                type="text" 
+                value={inputMessage} 
+                onChange={(e) => setInputMessage(e.target.value)} 
+                onKeyDown={(e) => { if (e.key === 'Enter' && !isLoading) { console.log('按下了回车键'); sendMessage(); } }} 
+                placeholder="输入你的问题..." 
+                disabled={isLoading}
+                className={`flex-1 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-all ${isLoading ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`} 
+              />
+              <label className={`relative w-11 h-11 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-all flex items-center justify-center cursor-pointer hover:border-primary group ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <UploadSimpleIcon className="text-base group-hover:text-primary transition-colors" />
+                <input type="file" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.md,.txt,.doc,.docx,.xlsx,.csv" className="absolute inset-0 opacity-0 cursor-pointer" disabled={isLoading} onChange={(e) => {
+                  const files = Array.from(e.target.files);
+                  if (files.length > 0) {
+                    const fileNames = files.map(f => f.name).join(', ');
+                    setMessages(prev => [...prev, { id: Date.now().toString(), type: 'system', content: `已选择文件：${fileNames}`, timestamp: '刚刚' }]);
+                  }
+                }} />
+              </label>
+              <button onClick={sendMessage} disabled={isLoading} className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${isLoading ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-primary to-accent-purple text-white hover:shadow-button'}`}>
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    思考中...
+                  </span>
+                ) : (
+                  '发送'
+                )}
+              </button>
+            </div>
+          </div>
+          <div className={`w-80 bg-gray-50/50 flex flex-col transition-all duration-300 ${panelCollapsed ? 'w-12' : ''}`}>
+            <div className="p-4 border-b border-gray-100 bg-white flex items-center justify-between">
+              {!panelCollapsed && <span className="font-semibold text-text-primary">✨ 实时产出</span>}
+              <button onClick={() => setPanelCollapsed(!panelCollapsed)} className="w-7 h-7 bg-gray-100 rounded-lg text-xs flex items-center justify-center hover:bg-gray-200">
+                {panelCollapsed ? '▶' : '◀'}
+              </button>
+            </div>
+            {!panelCollapsed && (
+              <div className="flex-1 p-4 overflow-y-auto scrollbar">
+                {outputContent ? (
+                  <div className="bg-white rounded-2xl p-5 shadow-card">
+                    <h4 className="font-semibold text-text-primary mb-4">{outputContent.title}</h4>
+                    {outputContent.type === 'topic' && (
+                      <div className="space-y-3">
+                        {outputContent.data.map((item, i) => (
+                          <div key={i} className="p-3 bg-gradient-to-r from-primary-light/50 to-accent-purple/10 rounded-xl flex items-center gap-3">
+                            <span className="w-7 h-7 bg-primary rounded-full flex items-center justify-center text-white text-xs font-bold">{i + 1}</span>
+                            <span className="text-sm text-gray-700">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {outputContent.type === 'copy' && (
+                      <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{outputContent.data}</p>
+                    )}
+                    {outputContent.type === 'tags' && (
+                      <div className="flex flex-wrap gap-2">
+                        {outputContent.data.map((tag, i) => (
+                          <span key={i} className="px-3 py-1.5 bg-gradient-to-r from-accent-pink/10 to-accent-purple/10 text-accent-pink rounded-full text-sm font-medium">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <MessageSquareIcon className="text-3xl mb-3 block mx-auto text-gray-300" />
+                    <p className="text-sm text-gray-500">发送消息后，AI生成的内容将在这里显示</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    // 数据看板页面
+    const DashboardPage = () => {
+      const [showReport, setShowReport] = useState(false);
+      const [showEditModal, setShowEditModal] = useState(false);
+      const [isSyncing, setIsSyncing] = useState(false);
+      
+      // 从 localStorage 读取数据，没有则使用 mock 数据
+      const [stats, setStats] = useState(() => {
+        const saved = localStorage.getItem('accountStats');
+        if (saved) {
+          return JSON.parse(saved);
+        }
+        return { ...mockData.accountStats };
+      });
+      
+      // 图表数据状态
+      const [weeklyData, setWeeklyData] = useState([...mockData.weeklyData]);
+      const [engagementData, setEngagementData] = useState([...mockData.engagementData]);
+      const [recentPosts, setRecentPosts] = useState([...mockData.recentPosts]);
+      
+      // 保存到 localStorage
+      useEffect(() => {
+        localStorage.setItem('accountStats', JSON.stringify(stats));
+      }, [stats]);
+      
+      const formatNum = (n) => n >= 10000 ? (n / 10000).toFixed(1) + 'w' : n.toString();
+      
+      const maxViews = Math.max(...weeklyData.map(d => d.views)) * 1.1;
+      const maxEngagement = Math.max(...engagementData.map(d => Math.max(d.likes, d.comments))) * 1.1;
+      
+      // 生成符合业务逻辑的随机数据
+      const generateBusinessData = (prevStats) => {
+        // 基于当前值生成合理的新总量
+        const baseFollowers = Math.round(prevStats.followers * (1 + Math.random() * 0.04 + 0.01)); // 1%~5%增长
+        const newFollowers = Math.max(1000, Math.min(baseFollowers, 50000));
+        const newFollowersChange = newFollowers - prevStats.followers; // 增量基于总量计算
+
+        const newEngagementRate = Math.max(2.0, Math.min(12.0, prevStats.engagementRate + (Math.random() * 2.5 - 1.0)));
+        const newEngagementChange = newEngagementRate - prevStats.engagementRate;
+
+        const newPostsThisMonth = prevStats.postsThisMonth + Math.floor(Math.random() * 3);
+        const newProfileViews = newFollowersChange * (Math.random() * 5 + 5) + Math.round(prevStats.profileViews * 0.8);
+        const newProfileViewsChange = newProfileViews - prevStats.profileViews;
+
+        return {
+          followers: newFollowers,
+          followersChange: newFollowersChange,
+          engagementRate: parseFloat(newEngagementRate.toFixed(1)),
+          engagementChange: parseFloat(newEngagementChange.toFixed(1)),
+          postsThisMonth: Math.min(newPostsThisMonth, 99),
+          profileViews: Math.round(newProfileViews),
+          profileViewsChange: Math.round(newProfileViewsChange)
+        };
+      };
+      
+      // 自动同步功能
+      const handleAutoSync = () => {
+        setIsSyncing(true);
+        
+        setTimeout(() => {
+          // 先计算新的业务数据
+          const newStatsData = generateBusinessData(stats);
+          
+          // 更新核心指标
+          setStats(newStatsData);
+          
+          // 更新周数据 - views应该与粉丝量级匹配
+          setWeeklyData(prev => prev.map(d => ({
+            ...d,
+            views: Math.round(newStatsData.profileViews * (0.1 + Math.random() * 0.15))
+          })));
+          
+          // 更新互动数据 - likes应该与粉丝数相关
+          setEngagementData(prev => prev.map(d => ({
+            ...d,
+            likes: Math.round(newStatsData.followers * (Math.random() * 0.1 + 0.05)),
+            comments: Math.round(newStatsData.followers * (Math.random() * 0.02 + 0.01))
+          })));
+          
+          // 更新近期内容数据
+          setRecentPosts(prev => prev.map(post => ({
+            ...post,
+            likes: Math.round(newStatsData.followers * 0.01 * (Math.random() + 0.5)),
+            comments: Math.round(newStatsData.followers * 0.005 * (Math.random() + 0.5)),
+            shares: Math.round(newStatsData.followers * 0.002 * (Math.random() + 0.5))
+          })));
+          
+          setIsSyncing(false);
+        }, 1500);
+      };
+      
+      // 表单数据状态
+      const [formData, setFormData] = useState({
+        followers: stats.followers,
+        engagementRate: stats.engagementRate,
+        postsThisMonth: stats.postsThisMonth,
+        profileViews: stats.profileViews
+      });
+      
+      // 更新表单数据
+      useEffect(() => {
+        setFormData({
+          followers: stats.followers,
+          engagementRate: stats.engagementRate,
+          postsThisMonth: stats.postsThisMonth,
+          profileViews: stats.profileViews
+        });
+      }, [stats]);
+      
+      // 保存数据
+      const handleSave = () => {
+        setStats({
+          ...stats,
+          followers: parseInt(formData.followers) || 0,
+          engagementRate: parseFloat(formData.engagementRate) || 0,
+          postsThisMonth: parseInt(formData.postsThisMonth) || 0,
+          profileViews: parseInt(formData.profileViews) || 0
+        });
+        setShowEditModal(false);
+      };
+      
+      return (
+        <div className="px-6 py-8 min-h-screen bg-bg">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-text-primary">数据看板</h1>
+              <p className="text-sm text-gray-500 mt-1">查看您的账号数据概览</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowEditModal(true)} className="px-5 py-3 border border-gray-200 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 flex items-center gap-2">
+                <Edit3Icon className="text-sm" /> 录入/修改数据
+              </button>
+              <button onClick={handleAutoSync} disabled={isSyncing} className={`px-5 py-3 bg-gradient-to-r from-primary to-accent-purple text-white rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${isSyncing ? 'opacity-80 cursor-not-allowed' : 'hover:shadow-button'}`}>
+                {isSyncing ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    正在连接小红书API...
+                  </>
+                ) : (
+                  <>
+                    <ArrowsClockwiseIcon className="text-sm" /> 自动同步平台数据
+                  </>
+                )}
+              </button>
+              <button onClick={() => setShowReport(true)} className="px-6 py-3 bg-gradient-to-r from-accent-pink to-primary text-white rounded-xl font-semibold hover:shadow-button transition-all duration-300 flex items-center gap-2">
+                <RobotIcon className="text-sm" /> AI一键复盘
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-5 mb-8">
+            {[
+              { icon: UsersIcon, value: formatNum(stats.followers), label: '粉丝数', change: `+${stats.followersChange} 较昨日`, gradient: 'from-primary to-accent-purple' },
+              { icon: ChartLineUpIcon, value: stats.engagementRate + '%', label: '近7天互动率', change: `+${stats.engagementChange}%`, gradient: 'from-accent-cyan to-primary' },
+              { icon: PencilSimpleLineIcon, value: stats.postsThisMonth, label: '本月发布数', change: '较上月 +3', gradient: 'from-accent-green to-accent-cyan' },
+              { icon: EyeIcon, value: formatNum(stats.profileViews), label: '主页访问量', change: `+${stats.profileViewsChange}`, gradient: 'from-accent-yellow to-accent-pink' }
+            ].map((stat, i) => {
+              const IconComp = stat.icon;
+              return (
+                <div key={i} className="bg-white rounded-2xl p-6 shadow-card hover:shadow-hover transition-all duration-300">
+                  <div className={`w-14 h-14 bg-gradient-to-br ${stat.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
+                    <IconComp className="text-2xl text-white" />
+                  </div>
+                <div className="mt-4">
+                  <p className="text-3xl font-bold text-text-primary">{stat.value}</p>
+                  <p className="text-sm text-gray-500 mt-1">{stat.label}</p>
+                  <p className="text-xs mt-1.5 font-medium text-accent-green">{stat.change}</p>
+                </div>
+              </div>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-3 gap-5 mb-8">
+            <div className="col-span-2 bg-white rounded-2xl p-6 shadow-card">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-semibold text-text-primary">粉丝增长趋势</h3>
+                <select className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs">
+                  <option>近7天</option><option>近30天</option><option>近90天</option>
+                </select>
+              </div>
+              <div className="w-full">
+                <svg viewBox="0 0 400 160" preserveAspectRatio="none" className="w-full h-44">
+                  {weeklyData.map((d, i) => {
+                    const height = (d.views / maxViews) * 130;
+                    return <rect key={d.date} x={i * 57.14 + 10} y={140 - height} width={30} height={height} fill="#6366F1" rx="4" />;
+                  })}
+                </svg>
+                <div className="flex justify-between mt-2">
+                  {weeklyData.map(d => <span key={d.date} className="text-xs text-gray-500">{d.date}</span>)}
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 shadow-card">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-semibold text-text-primary">互动趋势</h3>
+                <div className="flex gap-3 text-xs">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-primary rounded-full"></span>点赞</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-accent-green rounded-full"></span>评论</span>
+                </div>
+              </div>
+              <div className="w-full">
+                <svg viewBox="0 0 400 160" preserveAspectRatio="none" className="w-full h-44">
+                  {engagementData.map((d, i) => {
+                    const barWidth = 15;
+                    const gap = 57.14;
+                    const likesH = (d.likes / maxEngagement) * 130;
+                    const commentsH = (d.comments / maxEngagement) * 130;
+                    return (
+                      <g key={d.date}>
+                        <rect x={i * gap + 10} y={140 - likesH} width={barWidth} height={likesH} fill="#4F46E5" rx="3"/>
+                        <rect x={i * gap + 28} y={140 - commentsH} width={barWidth} height={commentsH} fill="#10B981" rx="3"/>
+                      </g>
+                    );
+                  })}
+                </svg>
+                <div className="flex justify-between mt-2">
+                  {engagementData.map(d => <span key={d.date} className="text-xs text-gray-500">{d.date}</span>)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-card">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-semibold text-text-primary">近期内容</h3>
+              <button className="text-sm text-primary hover:underline">查看全部</button>
+            </div>
+            <div className="space-y-4">
+              {recentPosts.map(post => (
+                <div key={post.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+                  <div className="w-16 h-16 bg-gradient-to-br from-primary-light to-accent-purple/20 rounded-xl flex items-center justify-center">
+                    <FileImageIcon className="text-2xl text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-text-primary">{post.title}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">{post.date}</p>
+                  </div>
+                  <div className="flex gap-4 text-sm">
+                    <span className="text-gray-500 flex items-center gap-1 text-sm">
+                      <HeartIcon className="text-sm" /> {post.likes}
+                    </span>
+                    <span className="text-gray-500 flex items-center gap-1 text-sm">
+                      <MessageSquareIcon className="text-sm" /> {post.comments}
+                    </span>
+                    <span className="text-gray-500 flex items-center gap-1 text-sm">
+                      <Share2Icon className="text-sm" /> {post.shares}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {showReport && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="w-full max-w-2xl bg-white rounded-2xl p-8 m-4">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
+                    <RobotIcon className="text-lg" /> AI 复盘报告
+                  </h3>
+                  <button onClick={() => setShowReport(false)} className="w-8 h-8 bg-gray-100 rounded-lg text-gray-500 hover:bg-gray-200 flex items-center justify-center">
+                    <XIcon className="text-sm" />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-primary-light/50 to-accent-purple/10 rounded-xl">
+                    <h4 className="font-semibold text-text-primary mb-2">本周概览</h4>
+                    <p className="text-sm text-gray-600">本周粉丝增长 <span className="text-accent-green font-medium">+320</span>，互动率提升 <span className="text-accent-green font-medium">0.5%</span>，整体表现良好！</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <h4 className="font-semibold text-text-primary mb-3">关键指标分析</h4>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      {[{ label: '粉丝增长', value: '+320' }, { label: '互动率', value: '4.8%' }, { label: '内容发布', value: '4篇' }].map((item, i) => (
+                        <div key={i}>
+                          <p className="text-2xl font-bold text-text-primary">{item.value}</p>
+                          <p className="text-xs text-gray-500">{item.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-accent-yellow/10 rounded-xl">
+                    <h4 className="font-semibold text-text-primary mb-2 flex items-center gap-2">
+                    <LightbulbIcon className="text-base text-accent-yellow" /> 优化建议
+                  </h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• 建议增加互动引导话术，提升评论率</li>
+                      <li>• 可尝试在发布时间上进行优化测试</li>
+                      <li>• 关注热点话题，增加内容曝光机会</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 flex items-center justify-center gap-2">
+                    <FilePdfIcon className="text-base" /> 导出报告
+                  </button>
+                  <button className="flex-1 py-2.5 bg-gradient-to-r from-primary to-accent-purple text-white rounded-lg font-medium hover:shadow-button flex items-center justify-center gap-2">
+                    <FolderOpenIcon className="text-base" /> 保存到方案库
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 数据录入弹窗 */}
+          {showEditModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="w-full max-w-lg bg-white rounded-2xl p-8 m-4">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
+                    <Edit3Icon className="text-lg" /> 录入/修改数据
+                  </h3>
+                  <button onClick={() => setShowEditModal(false)} className="w-8 h-8 bg-gray-100 rounded-lg text-gray-500 hover:bg-gray-200 flex items-center justify-center">
+                    <XIcon className="text-sm" />
+                  </button>
+                </div>
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">粉丝数</label>
+                    <input
+                      type="number"
+                      value={formData.followers}
+                      onChange={(e) => setFormData({ ...formData, followers: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      placeholder="请输入粉丝数"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">近7天互动率 (%)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={formData.engagementRate}
+                      onChange={(e) => setFormData({ ...formData, engagementRate: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      placeholder="请输入互动率"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">本月发布数</label>
+                    <input
+                      type="number"
+                      value={formData.postsThisMonth}
+                      onChange={(e) => setFormData({ ...formData, postsThisMonth: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      placeholder="请输入本月发布数"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">主页访问量</label>
+                    <input
+                      type="number"
+                      value={formData.profileViews}
+                      onChange={(e) => setFormData({ ...formData, profileViews: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      placeholder="请输入主页访问量"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-6 border-t border-gray-200">
+                  <button onClick={() => setShowEditModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
+                    取消
+                  </button>
+                  <button onClick={handleSave} className="flex-1 py-3 bg-gradient-to-r from-primary to-accent-purple text-white rounded-xl font-medium hover:shadow-button transition-all">
+                    保存并更新
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // 内容规划页面
+    const PlanningPage = () => {
+      const [activeTab, setActiveTab] = useState('topics');
+      const [activeFilter, setActiveFilter] = useState('全部');
+
+      const filteredTopics = mockData.topics;
+      const filteredMaterials = activeFilter === '全部' ? mockData.materials : mockData.materials.filter(m => m.category === activeFilter);
+
+      return (
+        <div className="px-6 py-8 min-h-screen bg-bg">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-text-primary">内容规划</h1>
+            <p className="text-sm text-gray-500 mt-1">规划您的内容创作计划</p>
+          </div>
+
+          <div className="flex gap-3 mb-6">
+            {[{ key: 'topics', label: '选题库' }, { key: 'calendar', label: '内容日历' }, { key: 'materials', label: '素材库' }, { key: 'inspiration', label: '灵感板' }].map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${activeTab === tab.key ? 'bg-gradient-to-r from-primary to-accent-purple text-white shadow-button' : 'bg-white text-gray-700 hover:bg-gray-50 shadow-card'}`}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === 'topics' && (
+            <div className="space-y-4">
+              {filteredTopics.map(topic => (
+                <div key={topic.id} className="bg-white rounded-2xl p-5 shadow-card hover:shadow-hover transition-all duration-300">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-text-primary">{topic.title}</h3>
+                      <div className="flex gap-2 mt-2">
+                        {topic.tags.map(tag => (
+                          <span key={tag} className="px-3 py-1 bg-primary-light/50 text-primary rounded-full text-xs font-medium">{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1.5 rounded-lg text-xs font-medium ${topic.status === '已完成' ? 'bg-accent-green/10 text-accent-green' : topic.status === '进行中' ? 'bg-accent-yellow/10 text-accent-yellow' : 'bg-gray-100 text-gray-500'}`}>
+                      {topic.status}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200">编辑</button>
+                    <button className="px-4 py-2 bg-primary-light text-primary rounded-lg text-xs font-medium hover:bg-primary-light/50">生成文案</button>
+                    <button className="px-4 py-2 bg-accent-green/10 text-accent-green rounded-lg text-xs font-medium hover:bg-accent-green/20">标记完成</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === 'calendar' && (
+            <div className="bg-white rounded-2xl p-6 shadow-card">
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {['日', '一', '二', '三', '四', '五', '六'].map(d => <div key={d} className="text-center text-sm text-gray-400 py-2 font-medium">{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 35 }).map((_, i) => (
+                  <div key={i} className={`aspect-square rounded-xl p-2 flex flex-col ${(i + 1) % 7 === 0 || (i + 1) % 7 === 1 ? 'bg-red-50/50' : 'bg-gray-50'} ${i === 14 ? 'ring-2 ring-primary' : ''}`}>
+                    <span className="text-sm text-gray-700">{i + 1}</span>
+                    {i === 8 && <span className="text-xs mt-1 px-1.5 py-0.5 bg-primary-light text-primary rounded-full">1篇</span>}
+                    {i === 14 && <span className="text-xs mt-1 px-1.5 py-0.5 bg-accent-green/20 text-accent-green rounded-full">2篇</span>}
+                    {i === 22 && <span className="text-xs mt-1 px-1.5 py-0.5 bg-accent-yellow/20 text-accent-yellow rounded-full">1篇</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'materials' && (
+            <>
+              <div className="flex gap-2 mb-6">
+                <button onClick={() => setActiveFilter('全部')} className={`px-4 py-2 rounded-lg text-sm font-medium ${activeFilter === '全部' ? 'bg-gradient-to-r from-primary to-accent-purple text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>全部</button>
+                {['模板', '素材', '教程'].map(cat => (
+                  <button key={cat} onClick={() => setActiveFilter(cat)} className={`px-4 py-2 rounded-lg text-sm font-medium ${activeFilter === cat ? 'bg-gradient-to-r from-primary to-accent-purple text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{cat}</button>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-5">
+                {filteredMaterials.map(material => (
+                  <div key={material.id} className="bg-white rounded-2xl p-5 shadow-card hover:shadow-hover transition-all duration-300">
+                    <div className="flex items-start justify-between">
+                      <h3 className="font-semibold text-text-primary">{material.title}</h3>
+                      <span className="px-2.5 py-1 bg-gray-100 text-gray-500 rounded-lg text-xs">{material.category}</span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-3">使用次数: {material.usage}</p>
+                    <button className="mt-4 w-full py-2.5 bg-primary-light text-primary rounded-lg text-sm font-medium hover:bg-primary-light/50">使用</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'inspiration' && (
+            <div className="space-y-6">
+              <div className="max-w-lg mb-6">
+                <div className="flex gap-3">
+                  <input type="text" placeholder="粘贴你想借鉴的笔记链接..." className="flex-1 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-all" />
+                  <button className="px-6 py-3 bg-gradient-to-r from-primary to-accent-purple text-white rounded-xl font-medium hover:shadow-button transition-all flex items-center gap-2">
+                <MagnifyingGlassIcon className="text-base" /> 学习分析
+              </button>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-primary-light/30 to-accent-purple/10 rounded-xl p-6 mb-6">
+                <h3 className="font-semibold text-text-primary mb-4">我们可以学到什么</h3>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2"></span>
+                    <span>标题使用数字吸引眼球</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-accent-pink rounded-full mt-2"></span>
+                    <span>内容结构清晰，层层递进</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-accent-green rounded-full mt-2"></span>
+                    <span>视觉呈现精美</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-accent-yellow rounded-full mt-2"></span>
+                    <span>互动引导话术巧妙</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-text-primary mb-4">热点趋势</h3>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {mockData.hotKeywords.map((word, i) => (
+                    <span key={word} className="px-4 py-2.5 bg-white rounded-full cursor-pointer hover:scale-105 hover:shadow-card transition-all text-sm font-medium" style={{ backgroundColor: ['#EEF2FF', '#ECFDF5', '#FEF3C7', '#FEE2E2', '#F5F3FF'][i % 5], color: ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][i % 5] }}>
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // 发布日历页面
+    const CalendarPage = () => {
+      const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+      const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+      const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+      const [days, setDays] = useState([]);
+
+      useEffect(() => {
+        const year = currentYear, month = currentMonth;
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startDay = firstDay.getDay();
+        const d = [];
+        for (let i = startDay - 1; i >= 0; i--) d.push({ date: new Date(year, month, 0).getDate() - i, currentMonth: false, contents: [] });
+        const contentsMap = {
+          1: [{ title: '短视频脚本', status: '已发布' }, { title: '图文笔记', status: '待发布' }],
+          5: [{ title: '直播预告', status: '草稿' }],
+          10: [{ title: '产品测评', status: '待发布' }, { title: '粉丝互动', status: '待发布' }, { title: '干货分享', status: '草稿' }],
+          15: [{ title: '月度总结', status: '草稿' }],
+          20: [{ title: '新品发布', status: '待发布' }],
+          25: [{ title: '教程视频', status: '已发布' }],
+          30: [{ title: 'Q&A问答', status: '待发布' }, { title: 'vlog日常', status: '草稿' }]
+        };
+        for (let i = 1; i <= daysInMonth; i++) d.push({ date: i, currentMonth: true, isToday: i === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear(), contents: contentsMap[i] || [] });
+        while (d.length < 42) d.push({ date: d.length - startDay - daysInMonth + 1, currentMonth: false, contents: [] });
+        setDays(d);
+      }, [currentYear, currentMonth]);
+
+      const todayTasks = days.find(d => d.isToday)?.contents || [];
+
+      const statusColors = {
+        '草稿': 'bg-accent-purple/10 text-accent-purple',
+        '待发布': 'bg-accent-yellow/10 text-accent-yellow',
+        '已发布': 'bg-accent-green/10 text-accent-green'
+      };
+
+      return (
+        <div className="px-6 py-8 min-h-screen bg-bg">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-text-primary">发布日历</h1>
+              <p className="text-sm text-gray-500 mt-1">管理您的内容发布计划</p>
+            </div>
+            <button className="px-6 py-3 bg-gradient-to-r from-primary to-accent-purple text-white rounded-xl font-medium hover:shadow-button transition-all flex items-center gap-2">
+                <PlusCircleIcon className="text-base" /> 添加发布任务
+              </button>
+          </div>
+          <div className="flex gap-6">
+            <div className="flex-1 bg-white rounded-2xl p-6 shadow-card">
+              <div className="flex justify-between items-center mb-5">
+                <button onClick={() => { if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); } else setCurrentMonth(m => m - 1); }} className="w-10 h-10 bg-gray-100 rounded-xl hover:bg-gray-200 text-lg transition-all">◀</button>
+                <span className="text-xl font-semibold text-text-primary">{currentYear}年{currentMonth + 1}月</span>
+                <button onClick={() => { if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); } else setCurrentMonth(m => m + 1); }} className="w-10 h-10 bg-gray-100 rounded-xl hover:bg-gray-200 text-lg transition-all">▶</button>
+              </div>
+              <div className="grid grid-cols-7 gap-2 mb-3">
+                {weekdays.map(d => <div key={d} className="text-center text-sm text-gray-400 py-2 font-medium">{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {days.map((day, i) => (
+                  <div key={i} className={`aspect-square rounded-xl p-1.5 flex flex-col cursor-pointer transition-all duration-300 ${!day.currentMonth ? 'opacity-30' : day.isToday ? 'ring-2 ring-primary bg-primary-light/50' : 'hover:bg-primary-light/30'} ${day.contents.length ? 'bg-gradient-to-br from-primary-light/50 to-accent-purple/10' : 'bg-gray-50'}`}>
+                    <span className={`font-medium ${!day.currentMonth ? 'text-gray-300' : day.isToday ? 'text-primary' : 'text-gray-700'}`}>{day.date}</span>
+                    <div className="mt-1 space-y-0.5">
+                      {day.contents.slice(0, 2).map((c, j) => (
+                        <div key={j} className={`text-[10px] px-1.5 py-0.5 rounded-full truncate ${statusColors[c.status]}`}>{c.title}</div>
+                      ))}
+                      {day.contents.length > 2 && <span className="text-[10px] text-gray-500">{day.contents.length - 2}+</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 p-4 bg-gradient-to-r from-accent-yellow/10 to-accent-pink/10 rounded-xl flex items-center gap-3">
+                <ClockCountdownIcon className="text-2xl text-accent-yellow" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">今日建议发布时间</p>
+                  <p className="text-xs text-gray-500">18:00 - 20:00</p>
+                </div>
+              </div>
+            </div>
+            <div className="w-80 bg-white rounded-2xl p-6 shadow-card h-fit sticky top-6">
+              <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
+                <ClipboardTextIcon className="text-base" /> 今日待发布
+              </h3>
+              {todayTasks.length ? (
+                <div className="space-y-4">
+                  {todayTasks.map((task, i) => (
+                    <div key={i} className="bg-gradient-to-br from-gray-50/50 to-gray-50 rounded-xl p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-text-primary text-sm">{task.title}</span>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[task.status]}`}>{task.status}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-3">18:00</p>
+                      <div className="flex gap-2">
+                        <button className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200">编辑</button>
+                        <button className="flex-1 py-2 bg-gradient-to-r from-primary to-accent-purple text-white rounded-lg text-xs font-medium hover:shadow-button transition-all">发布</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <ClipboardTextIcon className="text-4xl mb-4 block mx-auto text-gray-300" />
+                  <p className="text-sm text-gray-500 mb-4">今日暂无待发布内容</p>
+                  <button className="px-6 py-2.5 bg-gradient-to-r from-primary to-accent-purple text-white rounded-xl text-sm font-medium hover:shadow-button transition-all">添加任务</button>
+                </div>
+              )}
+              <div className="mt-5 pt-5 border-t border-gray-100 space-y-2">
+                <div className="flex items-center gap-2 text-sm text-gray-500"><span className="w-3 h-3 bg-accent-purple/20 rounded-full"></span>草稿</div>
+                <div className="flex items-center gap-2 text-sm text-gray-500"><span className="w-3 h-3 bg-accent-yellow/20 rounded-full"></span>待发布</div>
+                <div className="flex items-center gap-2 text-sm text-gray-500"><span className="w-3 h-3 bg-accent-green/20 rounded-full"></span>已发布</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 方案库页面
+    const PlansPage = () => {
+      const [activeCategory, setActiveCategory] = useState('all');
+      const [viewMode, setViewMode] = useState('list');
+      const categories = [{ key: 'all', label: '全部' }, { key: 'topic', label: '选题方案' }, { key: 'report', label: '诊断报告' }, { key: 'suggestion', label: '优化建议' }, { key: 'template', label: '模板' }];
+      const typeLabels = { topic: '选题方案', report: '诊断报告', suggestion: '优化建议', template: '模板' };
+      const typeColors = { 
+        topic: 'bg-gradient-to-r from-primary-light to-accent-purple/20 text-primary', 
+        report: 'bg-gradient-to-r from-accent-yellow/20 to-accent-pink/10 text-accent-yellow', 
+        suggestion: 'bg-gradient-to-r from-accent-green/10 to-accent-cyan/10 text-accent-green', 
+        template: 'bg-gradient-to-r from-accent-pink/10 to-accent-purple/10 text-accent-pink' 
+      };
+
+      const filteredPlans = activeCategory === 'all' ? mockData.plans : mockData.plans.filter(p => p.type === activeCategory);
+
+      return (
+        <div className="px-6 py-8 min-h-screen bg-bg">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-text-primary">方案库</h1>
+            <p className="text-sm text-gray-500 mt-1">管理您的内容方案和报告</p>
+          </div>
+          <div className="flex justify-between items-center mb-5">
+            <div className="flex gap-2">
+              {categories.map(cat => <button key={cat.key} onClick={() => setActiveCategory(cat.key)} className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${activeCategory === cat.key ? 'bg-gradient-to-r from-primary to-accent-purple text-white shadow-button' : 'bg-white text-gray-700 hover:bg-gray-50 shadow-card'}`}>{cat.label}</button>)}
+            </div>
+            <div className="flex gap-3">
+              <input type="text" placeholder="搜索方案..." className="px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm w-48 focus:outline-none focus:border-primary" />
+              <select className="px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm">
+                <option>最新优先</option><option>最早优先</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 mb-5">
+            <button onClick={() => setViewMode('list')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-gradient-to-r from-primary to-accent-purple text-white shadow-button' : 'bg-white border border-gray-100 hover:bg-gray-50'}`}>📋</button>
+            <button onClick={() => setViewMode('grid')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${viewMode === 'grid' ? 'bg-gradient-to-r from-primary to-accent-purple text-white shadow-button' : 'bg-white border border-gray-100 hover:bg-gray-50'}`}>📦</button>
+          </div>
+
+          {viewMode === 'list' ? (
+            <div className="space-y-4">
+              {filteredPlans.map(plan => (
+                <div key={plan.id} className="bg-white rounded-2xl p-5 shadow-card hover:shadow-hover transition-all duration-300">
+                  <div className="flex items-center gap-5">
+                    <span className={`px-3.5 py-1.5 rounded-lg text-xs font-medium ${typeColors[plan.type]}`}>{typeLabels[plan.type]}</span>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-text-primary">{plan.title}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">创建于 {plan.date}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-4 py-2 bg-gradient-to-r from-primary-light to-accent-purple/20 text-primary rounded-lg text-xs font-medium hover:from-primary-light/50 transition-all">查看</button>
+                      <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200">重新生成</button>
+                      <button className="px-4 py-2 bg-red-50 text-red-500 rounded-lg text-xs font-medium hover:bg-red-100">删除</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-5">
+              {filteredPlans.map(plan => (
+                <div key={plan.id} className="bg-white rounded-2xl p-5 shadow-card hover:shadow-hover transition-all duration-300">
+                  <span className={`px-3.5 py-1.5 rounded-lg text-xs font-medium ${typeColors[plan.type]} mb-3 inline-block`}>{typeLabels[plan.type]}</span>
+                  <h3 className="font-semibold text-text-primary mb-1">{plan.title}</h3>
+                  <p className="text-xs text-gray-500 mb-4">{plan.date}</p>
+                  <div className="flex gap-2 pt-4 border-t border-gray-100">
+                    <button className="flex-1 py-2 bg-gradient-to-r from-primary-light to-accent-purple/20 text-primary rounded-lg text-xs font-medium">查看</button>
+                    <button className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">重新生成</button>
+                    <button className="flex-1 py-2 bg-red-50 text-red-500 rounded-lg text-xs font-medium">删除</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {filteredPlans.length === 0 && (
+            <div className="text-center py-20">
+              <FolderOpenIcon className="text-4xl mb-4 block mx-auto text-gray-300" />
+              <p className="text-gray-500 mb-4">暂无方案</p>
+              <button className="px-6 py-2.5 bg-gradient-to-r from-primary to-accent-purple text-white rounded-xl font-medium">创建方案</button>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // 知识库页面
+    const KnowledgePage = () => {
+      const [activeCard, setActiveCard] = useState(null);
+
+      const cards = [
+        { key: 'platform', icon: ScrollIcon, title: '平台规则速查', desc: '了解各大平台社区规范', gradient: 'from-primary-light to-accent-purple/20' },
+        { key: 'benchmark', icon: ChartBarIcon, title: '数据基准参考', desc: '各领域KOL数据表现参考', gradient: 'from-accent-cyan/20 to-primary-light' },
+        { key: 'case', icon: MagnifyingGlassIcon, title: '爆款案例分析', desc: '拆解成功案例的共性', gradient: 'from-accent-pink/20 to-accent-purple/20' },
+        { key: 'methodology', icon: BooksIcon, title: '运营方法论', desc: '系统化的运营策略', gradient: 'from-accent-green/20 to-accent-cyan/20' }
+      ];
+
+      const currentKnowledge = activeCard ? mockData.knowledge.filter(k => k.category === activeCard) : [];
+
+      return (
+        <div className="px-6 py-8 min-h-screen bg-bg">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-text-primary">知识库</h1>
+            <p className="text-sm text-gray-500 mt-1">学习运营知识，提升创作能力</p>
+          </div>
+
+          <div className="grid grid-cols-4 gap-5 mb-8">
+            {cards.map(card => {
+              const IconComp = card.icon;
+              return (
+                <div key={card.key} onClick={() => setActiveCard(activeCard === card.key ? null : card.key)} className={`p-6 rounded-2xl cursor-pointer transition-all duration-300 ${activeCard === card.key ? 'bg-gradient-to-br ' + card.gradient + ' ring-2 ring-primary shadow-hover' : 'bg-white shadow-card hover:shadow-hover'}`}>
+                  <IconComp className="text-2xl mb-4 block text-primary" />
+                  <h3 className="font-semibold text-text-primary">{card.title}</h3>
+                  <p className="text-sm text-gray-500 mt-2">{card.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {activeCard && (
+            <div className="space-y-4">
+              {currentKnowledge.map(item => (
+                <div key={item.id} className="bg-white rounded-2xl p-5 shadow-card hover:shadow-hover transition-all duration-300">
+                  <h3 className="font-semibold text-text-primary">{item.title}</h3>
+                  <p className="text-sm text-gray-500 mt-2">{item.summary}</p>
+                  <button className="mt-4 px-4 py-2 bg-primary-light text-primary rounded-lg text-sm font-medium hover:bg-primary-light/50">查看详情</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // 设置页面
+    const SettingsPage = () => {
+      const [activeTab, setActiveTab] = useState('account');
+
+      return (
+        <div className="px-6 py-8 min-h-screen bg-bg">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-text-primary">设置</h1>
+            <p className="text-sm text-gray-500 mt-1">管理您的账户和应用设置</p>
+          </div>
+
+          <div className="flex gap-6">
+            <div className="w-56">
+              <nav className="space-y-1">
+                {[{ key: 'account', label: '账户信息' }, { key: 'notification', label: '通知设置' }, { key: 'appearance', label: '外观设置' }, { key: 'about', label: '关于我们' }].map(tab => (
+                  <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`w-full px-4 py-3 text-left rounded-xl transition-all ${activeTab === tab.key ? 'bg-gradient-to-r from-primary to-accent-purple text-white' : 'hover:bg-gray-50 text-gray-700'}`}>
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            <div className="flex-1 bg-white rounded-2xl p-8 shadow-card">
+              {activeTab === 'account' && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-6">
+                    <div className="w-20 h-20 bg-gradient-to-br from-primary to-accent-purple rounded-2xl flex items-center justify-center text-3xl text-white">Z</div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-text-primary">涨粉社用户</h3>
+                      <p className="text-sm text-gray-500">zhangfen@example.com</p>
+                    </div>
+                  </div>
+                  <div className="h-px bg-gray-100"></div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">昵称</label>
+                      <input type="text" defaultValue="涨粉社用户" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">邮箱</label>
+                      <input type="email" defaultValue="zhangfen@example.com" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">简介</label>
+                    <textarea rows="3" defaultValue="专注于社交媒体运营，分享涨粉技巧和内容创作经验" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary resize-none" />
+                  </div>
+                  <button className="px-6 py-3 bg-gradient-to-r from-primary to-accent-purple text-white rounded-xl font-medium hover:shadow-button transition-all">保存修改</button>
+                </div>
+              )}
+
+              {activeTab === 'notification' && (
+                <div className="space-y-4">
+                  {[{ label: '消息通知', desc: '接收新消息和回复通知', enabled: true }, { label: '周报推送', desc: '每周收到数据复盘报告', enabled: true }, { label: '热点提醒', desc: '发现热门话题时通知', enabled: false }, { label: '系统更新', desc: '接收应用更新通知', enabled: true }].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div>
+                        <h4 className="font-medium text-text-primary">{item.label}</h4>
+                        <p className="text-sm text-gray-500 mt-1">{item.desc}</p>
+                      </div>
+                      <button className={`w-12 h-7 rounded-full transition-all ${item.enabled ? 'bg-primary' : 'bg-gray-300'}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-sm transform transition-transform ${item.enabled ? 'translate-x-6' : 'translate-x-1'}`}></div>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'appearance' && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">主题模式</label>
+                    <div className="flex gap-3">
+                      <button className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2">
+                        <SunIcon className="text-base" /> 浅色
+                      </button>
+                      <button className="px-4 py-2.5 bg-gradient-to-r from-primary to-accent-purple text-white rounded-lg text-sm font-medium flex items-center gap-2">
+                        <MoonIcon className="text-base" /> 深色
+                      </button>
+                      <button className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2">
+                        <SettingsIcon className="text-base" /> 跟随系统
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">字体大小</label>
+                    <div className="flex gap-3">
+                      {['小号', '默认', '大号', '特大'].map((size, i) => (
+                        <button key={size} className={`px-4 py-2.5 rounded-lg text-sm font-medium ${i === 1 ? 'bg-gradient-to-r from-primary to-accent-purple text-white' : 'bg-gray-100 text-gray-700'}`}>{size}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'about' && (
+                <div className="space-y-6">
+                  <div className="p-6 bg-gradient-to-r from-primary-light/50 to-accent-purple/10 rounded-xl">
+                    <h3 className="text-lg font-semibold text-text-primary mb-2">涨粉社</h3>
+                    <p className="text-sm text-gray-600">KOC智能运营助手</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-2xl font-bold text-text-primary">v1.0.0</p>
+                      <p className="text-xs text-gray-500">版本号</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-text-primary">2024</p>
+                      <p className="text-xs text-gray-500">发布年份</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-text-primary">AI</p>
+                      <p className="text-xs text-gray-500">驱动技术</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <button className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">服务条款</button>
+                    <button className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">隐私政策</button>
+                    <button className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">联系我们</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 主应用组件
+    const App = () => {
+      const [currentPage, setCurrentPage] = useState('chat');
+
+      const renderPage = () => {
+        switch (currentPage) {
+          case 'chat': return <ChatPage />;
+          case 'dashboard': return <DashboardPage />;
+          case 'planning': return <PlanningPage />;
+          case 'calendar': return <CalendarPage />;
+          case 'plans': return <PlansPage />;
+          case 'knowledge': return <KnowledgePage />;
+          case 'settings': return <SettingsPage />;
+          default: return <ChatPage />;
+        }
+      };
+
+      return (
+        <div className="flex min-h-screen bg-bg">
+          <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+          <main className="flex-1 ml-60 min-h-screen">
+            <div key={currentPage} className="animate-fadeIn mx-auto max-w-[1200px]">
+              {renderPage()}
+            </div>
+          </main>
+        </div>
+      );
+    };
+
+    // 挂载React应用
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
