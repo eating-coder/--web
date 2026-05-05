@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>涨粉社 - KOC智能运营助手</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366F1',
+            'primary-light': '#EEF2FF',
+            'primary-dark': '#4F46E5',
+            'primary-gradient': '#8B5CF6',
+            bg: '#F5F7FA',
+            'bg-dark': '#E8ECF0',
+            card: '#FFFFFF',
+            'text-primary': '#1E293B',
+            'text-secondary': '#64748B',
+            'text-muted': '#94A3B8',
+            accent: { pink: '#EC4899', yellow: '#F59E0B', green: '#10B981', cyan: '#06B6D4', purple: '#8B5CF6' }
+          },
+          boxShadow: {
+            'soft': '0 4px 20px rgba(0, 0, 0, 0.08)',
+            'card': '0 2px 12px rgba(0, 0, 0, 0.06)',
+            'hover': '0 8px 30px rgba(99, 102, 241, 0.15)',
+            'button': '0 4px 14px rgba(99, 102, 241, 0.3)'
+          },
+          borderRadius: { 'xl': '16px', '2xl': '20px', '3xl': '24px' }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .scrollbar::-webkit-scrollbar { width: 6px; }
+    .scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const mockData = {
+      accountStats: { followers: 12560, engagementRate: 4.8, postsThisMonth: 12, profileViews: 8920, followersChange: 320, engagementChange: 0.5, profileViewsChange: 156 },
+      recentPosts: [
+        { id: 1, title: '如何快速涨粉', likes: 235, comments: 42, shares: 18, date: '04-28' },
+        { id: 2, title: '短视频创作技巧', likes: 567, comments: 89, shares: 67, date: '04-27' },
+        { id: 3, title: '直播带货经验分享', likes: 1234, comments: 234, shares: 156, date: '04-26' }
+      ],
+      weeklyData: [
+        { date: '周一', followers: 11800, views: 3200 }, { date: '周二', followers: 11950, views: 4500 }, { date: '周三', followers: 12100, views: 3800 }, { date: '周四', followers: 12250, views: 5200 }, { date: '周五', followers: 12400, views: 4100 }, { date: '周六', followers: 12480, views: 6800 }, { date: '周日', followers: 12560, views: 5900 }
+      ],
+      engagementData: [
+        { date: '周一', likes: 234, comments: 45 }, { date: '周二', likes: 456, comments: 78 }, { date: '周三', likes: 321, comments: 56 }, { date: '周四', likes: 567, comments: 89 }, { date: '周五', likes: 432, comments: 67 }, { date: '周六', likes: 876, comments: 134 }, { date: '周日', likes: 654, comments: 98 }
+      ],
+      topics: [
+        { id: 1, title: '如何提升账号曝光率', tags: ['运营技巧', '涨粉'], status: '待优化' },
+        { id: 2, title: '短视频内容创作技巧', tags: ['短视频', '创作'], status: '进行中' },
+        { id: 3, title: '粉丝互动运营策略', tags: ['互动', '粉丝'], status: '已完成' }
+      ],
+      materials: [
+        { id: 1, title: '产品测评模板', category: '模板', usage: 23 },
+        { id: 2, title: '热门话题汇总', category: '素材', usage: 45 }
+      ],
+      plans: [
+        { id: 1, title: 'Q2内容规划方案', type: 'topic', date: '2024-04-20' },
+        { id: 2, title: '账号诊断报告', type: 'report', date: '2024-04-18' }
+      ],
+      hotKeywords: ['AI创作', '短视频运营', '直播带货', '私域流量', '个人IP', '小红书运营']
+    };
+
+    // 内置 SVG 图标组件，彻底解决 CORS 报错
+    const SvgIcon = ({ d, className = "" }) => (
+      <svg className={`w-5 h-5 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d={d} />
+      </svg>
+    );
+
+    const IconChat = (props) => <SvgIcon {...props} d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />;
+    const IconDashboard = (props) => <SvgIcon {...props} d="M3 3v18h18M18 9l-5 5-2-2-4 4" />;
+    const IconPlanning = (props) => <SvgIcon {...props} d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />;
+    const IconCalendar = (props) => <SvgIcon {...props} d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM16 2v4M8 2v4M3 10h18" />;
+    const IconFolder = (props) => <SvgIcon {...props} d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />;
+    const IconGear = (props) => <SvgIcon {...props} d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1V15a2 2 0 0 1-2-2 2 2 0 0 1 2-2v-.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />;
+    const IconRobot = (props) => <SvgIcon {...props} d="M12 8V4m0 0H8m4 0h4M5 9h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M9 13h.01M15 13h.01" />;
+    const IconLightbulb = (props) => <SvgIcon {...props} d="M9 21h6 M9 18h6 M10 15c-3.33-2-4-5-4-8a6 6 0 0 1 12 0c0 3-1.67 6-4 8" />;
+
+    // 侧边栏组件 - 已移除知识库
+    const Sidebar = ({ currentPage, onNavigate }) => {
+      const menuItems = [
+        { key: 'chat', icon: IconChat, label: '对话助手' },
+        { key: 'dashboard', icon: IconDashboard, label: '数据看板' },
+        { key: 'planning', icon: IconPlanning, label: '内容规划' },
+        { key: 'calendar', icon: IconCalendar, label: '发布日历' },
+        { key: 'plans', icon: IconFolder, label: '方案库' },
+        { key: 'settings', icon: IconGear, label: '设置' }
+      ];
+
+      return (
+        <aside className="w-60 bg-white flex flex-col shadow-soft fixed left-0 top-0 h-screen z-50">
+          <div className="px-6 py-6 flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent-purple rounded-xl flex items-center justify-center text-white font-bold text-lg">Z</div>
+            <span className="text-xl font-bold text-text-primary">涨粉社</span>
+          </div>
+          <nav className="flex-1 py-4 px-3">
+            {menuItems.map(item => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => onNavigate(item.key)}
+                  className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-all duration-300 rounded-xl ${currentPage === item.key ? 'bg-gradient-to-r from-primary to-accent-purple text-white shadow-button' : 'hover:bg-gray-50 text-gray-700'}`}
+                >
+                  <IconComponent />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="px-3 pb-4">
+            <div className="p-4 bg-gradient-to-br from-primary-light/50 to-accent-purple/10 rounded-xl">
+              <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                <IconLightbulb className="text-accent-yellow" /> 今日提示
+              </p>
+              <p className="text-xs text-gray-500">发布高峰时段：18:00-20:00</p>
+            </div>
+          </div>
+        </aside>
+      );
+    };
+
+    // --- 各页面组件简写版 (逻辑同前，保持稳定) ---
+    const ChatPage = () => {
+      const [messages, setMessages] = useState([{ id: '1', type: 'ai', content: '嗨，今天创作上遇到什么难题了？', timestamp: '刚刚' }]);
+      return (
+        <div className="flex h-screen bg-white">
+          <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+            {messages.map(msg => (
+              <div key={msg.id} className={`flex gap-4 mb-4 ${msg.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">{msg.type === 'ai' ? <IconRobot /> : '👤'}</div>
+                <div className={`p-4 rounded-xl ${msg.type === 'ai' ? 'bg-gray-50' : 'bg-primary text-white'}`}>{msg.content}</div>
+              </div>
+            ))}
+            <div className="mt-auto pt-4 border-t flex gap-2">
+              <input type="text" className="flex-1 p-3 bg-gray-50 rounded-xl" placeholder="输入你的问题..." />
+              <button className="px-6 py-2 bg-primary text-white rounded-xl">发送</button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const DashboardPage = () => (
+      <div className="p-8">
+        <h1 className="text-2xl font-bold mb-6">数据看板</h1>
+        <div className="grid grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-2xl shadow-card">
+            <p className="text-sm text-gray-500">粉丝数</p>
+            <p className="text-3xl font-bold text-primary">12,560</p>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-card">
+            <p className="text-sm text-gray-500">本月发布</p>
+            <p className="text-3xl font-bold text-accent-green">12</p>
+          </div>
+        </div>
+      </div>
+    );
+
+    // 其他页面空壳
+    const PlanningPage = () => <div className="p-8"><h1 className="text-2xl font-bold">内容规划</h1></div>;
+    const CalendarPage = () => <div className="p-8"><h1 className="text-2xl font-bold">发布日历</h1></div>;
+    const PlansPage = () => <div className="p-8"><h1 className="text-2xl font-bold">方案库</h1></div>;
+    const SettingsPage = () => <div className="p-8"><h1 className="text-2xl font-bold">设置</h1></div>;
+
+    // 主应用组件
+    const App = () => {
+      const [currentPage, setCurrentPage] = useState('chat');
+      const renderPage = () => {
+        switch (currentPage) {
+          case 'chat': return <ChatPage />;
+          case 'dashboard': return <DashboardPage />;
+          case 'planning': return <PlanningPage />;
+          case 'calendar': return <CalendarPage />;
+          case 'plans': return <PlansPage />;
+          case 'settings': return <SettingsPage />;
+          default: return <ChatPage />;
+        }
+      };
+
+      return (
+        <div className="flex min-h-screen bg-bg">
+          <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+          <main className="flex-1 ml-60 animate-fadeIn">{renderPage()}</main>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
